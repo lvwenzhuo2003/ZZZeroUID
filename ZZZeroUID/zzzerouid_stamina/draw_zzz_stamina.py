@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Union
+from typing import Any, List, Union
 
 from gsuid_core.bot import Bot
 from PIL import Image, ImageDraw
@@ -60,6 +60,36 @@ async def draw_stamina_img(bot: Bot, ev: Event):
             await bot.send('你当前绑定的UID存在错误, 请尝试解决...')
 
 
+async def draw_bar(
+    title: str,
+    cur_value: Any,
+    max_value: Any,
+    max_yes: bool = True,
+):
+    bar = Image.open(TEXT_PATH / 'bar.png')
+    bar_draw = ImageDraw.Draw(bar)
+
+    if max_yes:
+        if cur_value >= max_value:
+            icon = YES
+        else:
+            icon = NO
+    else:
+        if cur_value <= max_value:
+            icon = YES
+        else:
+            icon = NO
+
+    bar.paste(icon, (93, 10), icon)
+
+    bar_draw.text((188, 51), f'{title}', GREY, zzz_font_40, 'lm')
+
+    bar_draw.text((716, 56), f'/{max_value}', GREY, zzz_font_40, 'lm')
+    bar_draw.text((708, 54), f'{cur_value}', YELLOW, zzz_font_50, 'rm')
+
+    return bar
+
+
 async def _draw_stamina_img(uid: str, ev: Event) -> Union[str, Image.Image]:
 
     data = await zzz_api.get_zzz_note_info(uid)
@@ -101,29 +131,62 @@ async def _draw_stamina_img(uid: str, ev: Event) -> Union[str, Image.Image]:
         card_icon = NO
         card_text = '未抽奖'
 
-    img = get_zzz_bg(950, 1400)
+    cnum = data['bounty_commission']['num']
+    ctotal = data['bounty_commission']['total']
+    if cnum >= ctotal:
+        bounty_icon = YES
+    else:
+        bounty_icon = NO
+
+    pnum = data['survey_points']['num']
+    ptotal = data['survey_points']['total']
+    if pnum >= ptotal:
+        survey_icon = YES
+    else:
+        survey_icon = NO
+
+    img = get_zzz_bg(950, 1700)
     bg = Image.open(TEXT_PATH / 'bg.png')
     battery_banner = Image.open(TEXT_PATH / 'battery_banner.png')
     active_banner = Image.open(TEXT_PATH / 'active_banner.png')
+    abyss_banner = Image.open(TEXT_PATH / 'abyss_banner.png')
+
     battery_card = Image.open(TEXT_PATH / 'battery_card.png')
+
     active_bar = Image.open(TEXT_PATH / 'bar.png')
     active_draw = ImageDraw.Draw(active_bar)
     gacha_bar = Image.open(TEXT_PATH / 'bar.png')
     gacha_draw = ImageDraw.Draw(gacha_bar)
     shop_bar = Image.open(TEXT_PATH / 'bar.png')
     shop_draw = ImageDraw.Draw(shop_bar)
+
+    mission_bar = Image.open(TEXT_PATH / 'bar.png')
+    mission_draw = ImageDraw.Draw(mission_bar)
+    point_bar = Image.open(TEXT_PATH / 'bar.png')
+    point_draw = ImageDraw.Draw(point_bar)
+
     battery_draw = ImageDraw.Draw(battery_card)
 
     active_draw.text((188, 51), '今日活跃度', GREY, zzz_font_40, 'lm')
     gacha_draw.text((188, 51), '刮刮卡', GREY, zzz_font_40, 'lm')
     shop_draw.text((188, 51), '录像店经营', GREY, zzz_font_40, 'lm')
+    mission_draw.text((188, 51), '悬赏委托', GREY, zzz_font_40, 'lm')
+    point_draw.text((188, 51), '调查点数', GREY, zzz_font_40, 'lm')
 
     active_bar.paste(vitality_icon, (93, 10), vitality_icon)
     gacha_bar.paste(card_icon, (93, 10), card_icon)
     shop_bar.paste(sale_icon, (93, 10), sale_icon)
+    point_bar.paste(bounty_icon, (93, 10), bounty_icon)
+    mission_bar.paste(survey_icon, (93, 10), survey_icon)
 
     active_draw.text((716, 56), f'/{max_vitality}', GREY, zzz_font_40, 'lm')
     active_draw.text((708, 54), f'{vitality}', YELLOW, zzz_font_50, 'rm')
+
+    mission_draw.text((716, 56), f'/{ctotal}', GREY, zzz_font_40, 'lm')
+    mission_draw.text((708, 54), f'{cnum}', YELLOW, zzz_font_50, 'rm')
+
+    point_draw.text((716, 56), f'/{ptotal}', GREY, zzz_font_40, 'lm')
+    point_draw.text((708, 54), f'{pnum}', YELLOW, zzz_font_50, 'rm')
 
     gacha_draw.text((826, 50), card_text, YELLOW, zzz_font_50, 'rm')
     shop_draw.text((826, 50), sale_text, YELLOW, zzz_font_50, 'rm')
@@ -160,8 +223,13 @@ async def _draw_stamina_img(uid: str, ev: Event) -> Union[str, Image.Image]:
     img.paste(battery_banner, (0, 402), battery_banner)
     img.paste(active_banner, (0, 849), active_banner)
     img.paste(battery_card, (0, 511), battery_card)
+    img.paste(abyss_banner, (0, 1264), abyss_banner)
+
     for index, i in enumerate([active_bar, shop_bar, gacha_bar]):
         img.paste(i, (0, 961 + index * 101), i)
+
+    for index, i in enumerate([mission_bar, point_bar]):
+        img.paste(i, (0, 1368 + index * 101), i)
 
     img = add_footer(img)
     return img
