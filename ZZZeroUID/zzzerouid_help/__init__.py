@@ -11,10 +11,14 @@ from ..utils.zzzero_prefix import PREFIX
 sv_zzz_help = SV('zzz帮助')
 
 
-@sv_zzz_help.on_fullmatch(f'{PREFIX}帮助')
+@sv_zzz_help.on_fullmatch('帮助')
 async def send_help_img(bot: Bot, ev: Event):
     logger.info('开始执行[zzz帮助]')
     await bot.send(await get_help())
 
 
-register_help('ZZZeroUID', f'{PREFIX}帮助', Image.open(ICON))
+register_help(
+    'ZZZeroUID',
+    f'{PREFIX}帮助',
+    Image.open(ICON),
+)
